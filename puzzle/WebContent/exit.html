@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+	<h1>회원 탈퇴</h1>
+	<div>
+		<h3>회원 탈퇴 하시겠습니까?</h3>
+		<div>
+			memberId: <input type="text" id="memberId" readonly="readonly">
+		</div>
+		<div>
+			memberPw: <input type="password" id="memberPw">
+		</div>
+		<button id="yes">YES</button>
+		<button id="no">NO</button>
+	</div>
+</body>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+	$(document).ready(function() {
+		// 로그인 정보 ajax 동기 요청
+		let loginState = null;
+		let checkRow = 0;
+		$.ajax({
+			url: "/puzzle/GetSessionInfo",
+			method: "POST",
+			async: false,
+			success: function(json){
+				loginState = json;
+				console.log("loginState: ", loginState);
+			}
+		});
+		// 로그인한 아이디
+		$("#memberId").val(loginState);
+		// YES 클릭
+		$("#yes").click(function() {
+			$.ajax({
+				url: "/puzzle/Exit",
+				method: "POST",
+				data: {"memberPw":$("#memberPw").val(),
+						"memberId": loginState
+				},
+				success: function(json){
+					checkRow = json;
+					console.log("json: ", json);
+					if(checkRow != 0) {
+						$.ajax({
+							url: "/puzzle/Logout",
+							method: "POST",
+							success: function(){
+									location.href="/puzzle/index.html"
+							}
+						})
+					}
+				}
+			});
+		});
+		// NO 클릭
+		$("#no").click(function() {
+			location.href="/puzzle/index.html"
+		});
+	});
+</script>
+</html>

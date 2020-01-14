@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+	<h1>비밀번호 변경</h1>
+	<div>
+		memberId: <input type="text" id="memberId" readonly="readonly">
+	</div>
+	<div>
+		memberPw: <input type="password" id="memberPw">
+	</div>
+	<div>
+		<button id="updateBtn">확인</button>
+	</div>
+</body>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+	$(document).ready(function() {
+		
+		// 로그인 정보 ajax 동기 요청
+		let loginState = null;
+		$.ajax({
+			url: "/puzzle/GetSessionInfo",
+			method: "POST",
+			async: false,
+			success: function(json){
+				loginState = json;
+				console.log("loginState: ", loginState);
+			}
+		});
+		// 로그인된 아이디
+		$("#memberId").val(loginState);
+		// 확인 클릭
+		$("#updateBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/UpdatePw",
+				method: "POST",
+				data: {"memberId":$("#memberId").val(),
+						"memberPw":$("#memberPw").val()},
+				success: function(){
+					console.log("update success");
+					location.href="/puzzle/index.html";
+				}
+			});
+		});
+	});
+</script>
+</html>

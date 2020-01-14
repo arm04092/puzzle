@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+	<h1>login</h1>
+	<table>
+		<tr>
+			<td>memberId</td>
+			<td><input type="text" id="memberId" value="sample@goodee.com"></td>
+		<tr>
+			<td>memberPw</td>
+			<td><input type="password" id="memberPw" value="1234"></td>
+		</tr>
+	</table>
+	<button type="button" id="loginBtn">login</button>
+	<button id="joinBtn">회원가입</button>
+</body>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+	$(document).ready(function() {
+		// 회원가입 버튼 클릭
+		$("#joinBtn").click(function() {
+			location.href="/puzzle/join.html";	
+		});
+		
+		// 로그인 버튼 클릭
+		$("#loginBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/Login",
+				method: "POST",
+				data: {memberId: $("#memberId").val(),
+						memberPw: $("#memberPw").val()},
+				success: function(){
+					console.log("login success!");
+					location.href="/puzzle/index.html"
+				}
+			})
+		});
+	});
+
+</script>
+</html>

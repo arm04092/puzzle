@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>join</title>
+</head>
+<body>
+	<h1>join</h1>
+	<div>memberId <input type="text" id="memberId1">@<input type="text" id="memberId2"></div>
+	<div>memberPw <input type="password" id="memberPw"></div>
+	<div><button id="joinBtn">회원가입</button></div>
+</body>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+	$(document).ready(function() {
+		// 회원가입 클릭
+		$("#joinBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/Join",
+				method: "POST",
+				data: {"memberId1":$("#memberId1").val(),
+						"memberId2":$("#memberId2").val(),
+						"memberPw":$("#memberPw").val()},
+				success: function() {
+					console.log("signIn success");
+					location.href="/puzzle/index.html";
+				},
+					
+			});
+		}); 
+	});
+</script>
+</html> 

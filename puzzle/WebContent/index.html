@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Index</title>
+<style>
+	#top button{display:none;}
+	table, th, td{
+		border: 1px solid;
+		border-collapse:collapse;
+	}
+</style>
+</head>
+<body>
+	<h1>puzzle index</h1>
+	<div id="top">
+		<!-- 로그인 전 -->
+		<button id="loginBtn">로그인</button>
+		<!-- 로그인 후 -->
+		<button id="logoutBtn">로그아웃</button>
+		<button id="myReportBtn">내 기록</button>
+		<button id="updatePwBtn">비밀번호 변경</button>
+		<button id="ExitBtn">회원 탈퇴</button>
+	</div>
+	<div>
+		<h2>그림 맞추기 Game</h2>
+		<button id="playBtn">Play</button>
+		<button id="todayTopBtn">오늘의 TOP10</button>
+		<button id="monthTopBtn">이달의 TOP10</button>
+		<button id="TopBtn">TOP10</button>
+	</div>
+	<div id="table">
+	</div>
+</body>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+<script>
+	$(document).ready(function() {
+		// 로그인 정보 ajax 동기 요청
+		let loginState = null;
+		$.ajax({
+			url: "/puzzle/GetSessionInfo",
+			method: "POST",
+			async: false,
+			success: function(json){
+				loginState = json;
+				console.log("loginState: ", loginState);
+			}
+		});
+		
+		// 테이블 만들기
+		let getTable = function(){
+			let html = "<table>";
+					html += "<thead>";
+					html += "<tr><th>report_id</th><th>member_id</th><th>report_date</th><th>count</th><th>timer</th></tr>";
+					html += "</thead>";
+					html += "<tbody id='list'>";
+					html += "</tbody>";
+			   html += "</table>";
+			$("#table").html(html);
+		}
+		
+		// 로그인여부에 따른 버튼 표시
+		// 로그인 안했을 경우
+		if(loginState == null) {
+			$("#loginBtn").css("display", "inline-block");
+		// 로그인 했을 경우
+		} else {
+			$("#logoutBtn").css("display", "inline-block");
+			$("#myReportBtn").css("display", "inline-block");
+			$("#updatePwBtn").css("display", "inline-block");
+			$("#ExitBtn").css("display", "inline-block");
+		}
+		
+		
+		//로그인 버튼 클릭
+		$("#loginBtn").click(function() {
+			location.href = "/puzzle/login.html";
+		});
+		
+		// 로그아웃 버튼 클릭
+		$("#logoutBtn").click(function() {
+				$.ajax({
+					url: "/puzzle/Logout",
+					method: "POST",
+					success: function() {
+						console.log("logout success");
+						location.href="/puzzle/index.html";
+					}
+				});
+			});
+		
+		// 비밀번호 변경 버튼 클릭
+		$("#updatePwBtn").click(function() {
+			location.href = "/puzzle/updatePw.html";
+		});
+		// 회원 탈퇴 버튼 클릭
+		$("#ExitBtn").click(function() {
+			location.href = "/puzzle/exit.html";
+		});
+		
+		// play 버튼 클릭
+		$("#playBtn").click(function() {
+			location.href = "/puzzle/puzzle.html";
+		});
+		
+		// 리스트 띄우는 버튼
+		// 내기록 버튼 클릭
+		$("#myReportBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/GetReportList",
+				method: "POST",
+				data: {"memberId":loginState,
+						"reportCase": 1,
+				},
+				success: function(json) {
+					console.log(json);
+					getTable();
+					$(json).each(function(index, item) {
+						let time = "";
+						if(parseInt(item.timer)>=6000) {
+							time = Math.floor(item.timer/6000)+"분 " + Math.floor((item.timer%6000)/100)+"초 " + Math.floor((item.timer%6000)%100);
+						} else {
+							time = Math.floor((item.timer%6000)/100)+"초 "+ Math.floor((item.timer%6000)%100);
+						}
+						let list = "<tr><td>"+item.reportId+"</td><td>"+item.memberId+"</td><td>"+item.reportDate+"</td><td>"+item.count+"</td><td>"+time+"</td></tr>";
+						$("#list").append(list);
+					});
+				}
+			});
+		});
+
+		// 오늘의TOP10 버튼 클릭
+		$("#todayTopBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/GetReportList",
+				method: "POST",
+				data: {"memberId":loginState,
+						"reportCase": 2,	
+				},
+				success: function(json) {
+					console.log(json);
+					getTable();
+					$(json).each(function(index, item) {
+						let time = "";
+						if(parseInt(item.timer)>=6000) {
+							time = Math.floor(item.timer/6000)+"분 " + Math.floor((item.timer%6000)/100)+"초 " + Math.floor((item.timer%6000)%100);
+						} else {
+							time = Math.floor((item.timer%6000)/100)+"초 "+ Math.floor((item.timer%6000)%100);
+						}
+						let list = "<tr><td>"+item.reportId+"</td><td>"+item.memberId+"</td><td>"+item.reportDate+"</td><td>"+item.count+"</td><td>"+time+"</td></tr>";
+						$("#list").append(list);
+					});
+				}
+			});
+		});
+		// 이달의TOP10 버튼 클릭
+		$("#monthTopBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/GetReportList",
+				method: "POST",
+				data: {"memberId":loginState,
+						"reportCase": 3,	
+				},
+				success: function(json) {
+					console.log(json);
+					getTable();
+					$(json).each(function(index, item) {
+						let time = "";
+						if(parseInt(item.timer)>=6000) {
+							time = Math.floor(item.timer/6000)+"분 " + Math.floor((item.timer%6000)/100)+"초 " + Math.floor((item.timer%6000)%100);
+						} else {
+							time = Math.floor((item.timer%6000)/100)+"초 "+ Math.floor((item.timer%6000)%100);
+						}
+						let list = "<tr><td>"+item.reportId+"</td><td>"+item.memberId+"</td><td>"+item.reportDate+"</td><td>"+item.count+"</td><td>"+time+"</td></tr>";
+						$("#list").append(list);
+					});
+				}
+			});
+		});
+		// TOP10 버튼 클릭
+		$("#TopBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/GetReportList",
+				method: "POST",
+				data: {"memberId":loginState,
+						"reportCase": 4,
+				},
+				success: function(json) {
+					console.log(json);
+					getTable();
+					$(json).each(function(index, item) {
+						let time = "";
+						if(parseInt(item.timer)>=6000) {
+							time = Math.floor(item.timer/6000)+"분 " + Math.floor((item.timer%6000)/100)+"초 " + Math.floor((item.timer%6000)%100);
+						} else {
+							time = Math.floor((item.timer%6000)/100)+"초 "+ Math.floor((item.timer%6000)%100);
+						}
+						let list = "<tr><td>"+item.reportId+"</td><td>"+item.memberId+"</td><td>"+item.reportDate+"</td><td>"+item.count+"</td><td>"+time+"</td></tr>";
+						$("#list").append(list);
+					});
+				}
+			});
+		});
+	});
+	
+	
+</script>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+	table {
+		border-top: 1px solid gray;
+		border-right: 1px solid gray;
+	}
+	
+	td {
+		border-bottom: 1px solid gray;
+		border-left:  1px solid gray;
+	}
+	
+	input {
+		width: 150px; 
+		height: 150px;
+	}
+    #left {
+        width: 50%;
+        box-sizing: border-box;
+        float: left;
+    }
+    #right {
+        width: 50%;
+        box-sizing: border-box;
+        float: right;    
+    }
+    #hintBtn {
+    	width:100px;
+    	height: 40px;
+    	border: 1px solid;
+    	text-align: center;
+    	padding: 30px 0px;
+    	font-size: 25px;
+    }
+    #hintBtn:hover {
+    	background-color: buttonface;
+    }
+    .card{width:100px; height:150px; position:relative; display:inline-block; margin-right:50px;}
+    .front{position:absolute; top:0; left:0;}
+    .flag{position:absolute; top:0; left:0;}
+</style>
+<script src="/puzzle/scripts/jquery-3.4.1.min.js"></script>
+</head>
+<body>
+<!-- 
+	- 요구사항정의
+
+	v 1. 16개의 그림이미지를 화면에 보여준다.
+	v 2. 랜덤으로 섞어서 보여준다.
+	v 3. 3초 후에 이미지를 안보이게 한다.
+	v 4. 이미지 클릭 이벤트 리스너 추가
+	v 5. 이미지를 첫번째 클릭하면 이미지가 보여야 한다
+	6. 이미지를 두번째 클릭하면 첫번째 이미지와 비교후 같으면 이미지를 보여주고 이벤트를 제거 성공횟수를 1증가
+	7. 이미지를 두번째 클릭하면 첫번째 이미지와 비교후 다르면 이미지를 초기화
+	8. 이미지 두번째 클릭후 이미지클릭 카운터를 초기화
+	9. 5,6,7,8 반복하다가 성공횟수가 전체그림의 수/2 와 같으면 게임종료
+	10. input 타입으로 이미지를 보여준다.
+	
+	
+ -->
+ 	<!-- 왼쪽: 그림 맞추기 테이블 -->
+ 	<div id="left">
+		<table id="board">
+		
+		</table>
+	</div>
+	<!-- 오른쪽: 메뉴, 게임정보, 힌트 버튼 -->
+	<div id="right">
+		<div>
+			<button id="homeBtn">home</button>
+			<button id="logoutBtn">logout</button>
+			<button id="retryBtn">retry</button>
+		</div>
+		<div><h2>puzzle - <span id="loginState"></span></h2></div>
+		<div><h3>timer - <span id="timer">0</span></h3></div>
+		<div><h1>combo - <span id="combo">0</span></h1></div>
+		<div><h3>chance - <span id="chance">1</span></h3></div>
+		<div><div id="hintBtn">hint</div>
+		</div>
+	</div>
+</body>
+<script>
+	//stage1이면 모델1 stage2면 모델2
+	let model1 = ["bomb.jpg", "bomb.jpg",
+				 "bomb.jpg", "bomb.jpg",
+				 "pic02.jpg", "pic02.jpg",
+				 "pic03.jpg", "pic03.jpg",
+				 "pic04.jpg", "pic04.jpg",
+				 "pic05.jpg", "pic05.jpg",
+				 "pic06.jpg", "pic06.jpg",
+				 "pic07.jpg", "pic07.jpg",
+				];
+	
+	let model2 = ["pic00.jpg", "pic00.jpg",
+				 "pic01.jpg", "pic01.jpg",
+				 "bomb.jpg", "bomb.jpg",
+				 "bomb.jpg", "bomb.jpg",
+				 "bomb.jpg", "bomb.jpg",
+				 "bomb.jpg", "bomb.jpg",
+				 "pic06.jpg", "pic06.jpg",
+				 "pic07.jpg", "pic07.jpg",
+				 "pic08.jpg", "pic08.jpg",
+				 "pic09.jpg", "pic09.jpg",
+				 "pic10.jpg", "pic10.jpg",
+				 "pic11.jpg", "pic11.jpg",
+				 "pic12.jpg", "pic12.jpg",
+				 "pic13.jpg", "pic13.jpg",
+				 "pic14.jpg", "pic14.jpg",
+				 "pic15.jpg", "pic15.jpg",
+				 "pic16.jpg", "pic16.jpg",
+				 "pic17.jpg", "pic17.jpg",
+				];
+	
+	let model3 = ["pic00.jpg", "pic00.jpg",
+		 "pic01.jpg", "pic01.jpg",
+		 "pic02.jpg", "pic02.jpg",
+		 "pic03.jpg", "pic03.jpg",
+		 "pic04.jpg", "pic04.jpg",
+		 "pic05.jpg", "pic05.jpg",
+		 "bomb.jpg", "bomb.jpg",
+		 "bomb.jpg", "bomb.jpg",
+		 "bomb.jpg", "bomb.jpg",
+		 "bomb.jpg", "bomb.jpg",
+		 "bomb.jpg", "bomb.jpg",
+		 "bomb.jpg", "bomb.jpg",
+		 "pic12.jpg", "pic12.jpg",
+		 "pic13.jpg", "pic13.jpg",
+		 "pic14.jpg", "pic14.jpg",
+		 "pic15.jpg", "pic15.jpg",
+		 "pic16.jpg", "pic16.jpg",
+		 "pic17.jpg", "pic17.jpg",
+		];
+	
+	$(document).ready(function() {
+		// 타이머
+		let timerNum = 0;
+		timer = setInterval(function() {
+			timerNum++;
+			$("#timer").text(Math.floor(timerNum/100)+"초" + Math.floor(timerNum%100));
+		}, 10);
+		
+		// 다시하기 버튼 클릭
+		$("#retryBtn").click(function() {
+			location.reload();
+		});
+		
+		// sessionInfo ajax 동기 요청
+		let loginState = null;
+		$.ajax({
+			url: "/puzzle/GetSessionInfo",
+			method: "POST",
+			async: false,
+			success: function(json){
+				loginState = json;
+				console.log("loginState: ", loginState);
+			}
+		});
+		
+		// 로그인 안됐으면 인덱스로 보내기
+		if(loginState == null) {
+			location.href = "/puzzle/login.html";
+			return false;
+		}
+		// 상단에 로그인 id 표시
+		$("#loginState").append(loginState)
+		
+		//홈버튼 클릭
+		$("#homeBtn").click(function() {
+			location.href = "/puzzle/index.html";
+		});
+		//로그아웃 버튼 클릭
+		$("#logoutBtn").click(function() {
+			$.ajax({
+				url: "/puzzle/Logout",
+				method: "POST",
+				success: function() {
+					console.log("logout success");
+					location.href="/puzzle/index.html";
+				}
+			});
+		});
+		
+		// 게임 변수 설정
+		//success = (length/2) - (bomb/2)
+		//bomb = 4 * stage
+		
+		let total = 0;	// 몇 번째 클릭인지
+		let stage = 1;
+		let state = 0;	// 클릭 상태 (0,1,2)
+		let success = 0; // 맞춘 개수
+		let onePic = null;
+		let twoPic = null;
+		let bomb = 4*stage;
+		let combo = 0;
+		let chance = 1;
+		//stage1이면 모델1 stage2면 모델2
+		let model = model1;
+		console.log("model.length: ",model.length);
+		
+		// 힌트 버튼 클릭
+		$("#hintBtn").click(function() {
+			$(".pic").each(function() {
+				// 폭탄 위치만 보여줌
+				if($(this).attr("src")== "/puzzle/images/puzzle/bomb.jpg") {
+					// 그림 사라지기 전까지 클릭 방지
+					$(this).attr("disabled", true);
+					$(this).animate({"opacity":1}, 250);
+					$(this).animate({"opacity":0.001, "disabled":false}, 250);
+				}
+			});
+			// 힌트 다 쓰면 사라짐
+			chance--;
+			$("#chance").html(chance);
+			if(chance == 0) {
+				$(this).hide();
+			}
+		});
+		
+		
+//----------------------------------------------------------------------------------
+		// 모델 셔플
+		for(let i=0; i<1000000; i++) {
+			let tmp = model[0];
+			let ran = Math.floor(Math.random()*model.length);
+			tmp = model[0];
+			model[0] = model[ran];
+			model[ran] = tmp;
+		}
+		// 모델 출력
+		$(model).each(function(index, item) {
+			
+			// 우클릭 방지 : oncontextmenu='return false'
+			// 드래그 방지 : ondragstart='return false'
+			
+			//console.log(index%4);
+		
+			// 4개마다 줄 넘김
+			if((index%4) == 0) {
+				$("#board").append("</tr><tr>");
+			}
+			$("#board").append("<td class='card' oncontextmenu='return false' ondragstart='return false'><input type='image' class='pic front' src='/puzzle/images/puzzle/"+item+"'></td>");
+		});
+
+		// 그림이 사라지기 전까지 클릭 방지
+		$(".pic").attr("disabled", true);
+		$(".pic").each(function() {
+			$(this).animate({"opacity":0.001, "disabled":false}, 5000);
+		});
+//-----------------------------------------------------------------------------------------
+		
+		// 이미지 우클릭
+		$(document).on("mousedown", ".pic",function(e) {
+			console.log(e.which); // 1:좌클릭, 2:휠클릭, 3:우클릭
+			if(e.which == 3) {
+				$(this).closest("td").append("<input type='image' class='flag' src='/puzzle/images/puzzle/flag.jpg' width='150' height='150'>");
+			}
+		});
+		// 플래그 우클릭
+		$(document).on("mousedown",".flag", function(e) {
+			console.log(e.which);
+			if(e.which ==3) {
+				$(this).remove();
+			}
+		});
+
+		// 이미지 좌클릭
+		$(document).on("click",".pic",function() {
+			//console.log($(this).attr("src"));
+			total++;
+			console.log("--- click ---");
+			console.log("stage: " + stage);
+			console.log("total: "+ total);
+			state++;
+			$(this).attr("disabled", true); // 더블 클릭 방지를 위해 클릭을 막음
+			if($(this).attr("src")== "/puzzle/images/puzzle/bomb.jpg") {
+				$("#board").empty();
+				$("#board").append("<img id='boom' src='/puzzle/images/puzzle/boom.jpg' width='600' height='600'>");
+				$("#boom").css("opacity", 0.01);
+				$("#boom").animate({opacity:1}, 5000);
+				clearInterval(timer);
+				return;
+			}
+			if(1 == state) {	// 첫 번째 클릭
+				console.log("state: 1");
+				$(this).animate({opacity:1}, 1);
+				onePic = $(this);
+			} else if(2 == state) { // 두 번째 클릭
+				console.log("state: 2");
+				$(this).animate({opacity:1}, 1);
+				twoPic = $(this);
+				if($(onePic).attr("src") == $(twoPic).attr("src")) {
+					success++;
+					combo++;
+					$("#combo").html(combo);
+					if(combo%5 == 0 && combo != 0) {
+						chance++;
+						$("#chance").html(chance);
+						$("#hintBtn").show();
+					}
+					console.log("success:" + success);
+					// 게임 종료
+					if(success == ((model.length/2)-(bomb/2)) ) {
+						console.log(stage,"스테이지 종료 시간("+timerNum+"), 횟수("+total+")");
+						stage += 1;
+						success = 0;
+						bomb = 4*stage;
+						
+						// 스테이지3까지만 실행
+						if(stage < 4) {
+							$("#board").empty();
+							//----------------------------------------------------------------------------------		
+							//stage2면 모델2 stage3이면 모델3
+							if(stage == 2) {
+								model = model2;
+							} else if(stage == 3) {
+								model = model3;
+							}
+							console.log("stage: ", stage);
+							console.log("model.length: ",model.length);
+							// 모델 셔플
+							for(let i=0; i<1000000; i++) {
+								let tmp = model[0];
+								let ran = Math.floor(Math.random()*model.length);
+								tmp = model[0];
+								model[0] = model[ran];
+								model[ran] = tmp;
+							}
+							// 모델 출력
+							$(model).each(function(index, item) {
+								
+								// 우클릭 방지 : oncontextmenu='return false'
+								// 드래그 방지 : ondragstart='return false'
+								
+								//console.log(index%4);
+							
+								// 4개마다 줄 넘김
+								if((index%Math.sqrt(model.length)) == 0) {
+									$("#board").append("</tr><tr>");
+								}
+								$("#board").append("<td class='card' oncontextmenu='return false' ondragstart='return false'><input type='image' class='pic front' src='/puzzle/images/puzzle/"+item+"'></td>");
+							});
+							
+							// 그림이 사라지기 전에 클릭 방지
+							$(".pic").attr("disabled", true);
+							$(".pic").each(function() {
+								$(this).animate({"opacity":0.001, "disabled":false}, 5000);
+							});							
+							
+					//-----------------------------------------------------------------------------------------
+						} else {
+							// 스테이지 3이 끝나면 종료
+							clearInterval(timer);
+							$.ajax({
+								url: "/puzzle/AddReport",
+								method: "POST",
+								data: { "memberId": loginState,
+										"timer": timerNum,
+										"count": total},
+							});
+							console.log("게임종료 시간("+timerNum+"), 횟수("+total+")");
+							alert("clear!");
+							return;
+						}	
+						
+					}
+				// 그림 맞추기가 틀렸을 경우
+				} else {
+					$(onePic).animate({"opacity":0.001}, 500);
+					$(twoPic).animate({"opacity":0.001}, 500);
+					$(onePic).attr("disabled", false);
+					$(twoPic).attr("disabled", false);
+					combo = 0;
+					$("#combo").html(combo);
+				}
+				state = 0;
+			}
+		}); // 그림 클릭 이벤트 닫는 괄호
+	}); // document ready 닫는 괄호
+
+</script>
+</html>
